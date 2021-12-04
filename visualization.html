@@ -33,16 +33,31 @@
             font-family: American Typewriter;
             font-size: 20px;
         }
+        .category{
+          width: 100%;
+          text-align: center;
+        }
     </style>
 </head>
 <body style ="background: #faf1cd">
         <p style="font-family: American Typewriter; font-size: 40px; text-align: left; margin: 15px;">Recommendation Result:</p>
     <div class="recommendation">
+        <div class="category">
+        <label>Select Category: </label>
+        <select id="categoryDropdown"></select>
+        <div class="book" id="book"></div>
+        </div>
+
         <div class="row">
             <!--Put visualization in this div-->
             <div class="column_left" style="background-color:white;" id="data_vis"></div>
             <!--Put book's information in this div-->
             <div class="column_right" id="book_info"></div>
+            
+
+
+
+
         </div>
     </div>
 
@@ -224,7 +239,103 @@
         else if(method=="category"){
             //category recommendation and visualization
             var category = params.get("category");
-            
+            var	margin = {top: 100, right: 200, bottom: 50, left: 100};
+            var ww = 1600;
+            var hh = 800;
+            var w = ww - margin.left - margin.right;
+            var h = hh - margin.top - margin.bottom;
+
+            // enter code to create svg
+            var showFiveBooksDiv = d3.select(".book")
+              
+            var bookCategoryWeight = d3.csv('data/category_score_sort.csv');
+
+            Promise.all([
+                // enter code to read files
+                bookCategoryWeight
+              ])
+              .then(function(data) {
+
+                ready(0, data[0]);
+              });
+
+            function ready(error, book) {
+              // enter code to extract all unique categories
+              var selectedCategory = category;
+
+              console.log(book);
+
+              var cnt = 0;
+              var fiveBooks = [];
+              for (var i = 0; i < book.length; ++i) {
+                if (book[i]['Category'] == selectedCategory) {
+                  fiveBooks.push(book[i]);
+                  cnt = cnt + 1;
+                  if (cnt >= 5) break;
+                }
+              }
+              console.log(fiveBooks);
+
+              var unique_categories= [...new Set(book.map(item => item.Category))];
+                        unique_categories=unique_categories.sort()
+
+              var drop_down_option= d3.select("#categoryDropdown")
+              .selectAll("option")
+              .data(unique_categories)
+              .enter()
+              .append("option")
+              .attr("value", function(d) {return d;})
+              .append("text")
+              .text(function(d) {return d;})
+              .property("selected", function(d) {
+                  return selectedCategory
+              });
+              // enter code to append the game options to the dropdown
+              d3.select("#categoryDropdown")
+                          .on("change", change);
+              function change(d) {
+                selectedCategory = d3.select(this).property("value");
+              
+              showFiveBooksDiv.selectAll("img").remove();
+              showFiveBooksDiv.selectAll("text").remove();
+              
+              var cnt = 0;
+              var fiveBooks = [];
+              for (var i = 0; i < book.length; ++i) {
+                if (book[i]['Category'] == selectedCategory) {
+                  fiveBooks.push(book[i]);
+                  cnt = cnt + 1;
+                  if (cnt >= 5) break;
+                }
+              }
+
+                  createMapAndLegend(fiveBooks, selectedCategory)
+              };
+              // event listener for the dropdown. Update choropleth and legend when selection changes. Call createMapAndLegend() with required arguments.
+              
+              // create Choropleth with default option. Call createMapAndLegend() with required arguments. 
+              createMapAndLegend(fiveBooks, selectedCategory);
+            }
+
+            // this function should create a Choropleth and legend using the world and gameData arguments for a selectedGame
+            // also use this function to update Choropleth and legend when a different game is selected from the dropdown
+            function createMapAndLegend(fiveBooks, selectedCategory) { 
+
+                showFiveBooksDiv.selectAll("img")
+                  .data(fiveBooks)
+                  .enter()
+                  .append('img')
+                  .attr("src", function(d, i) { return fiveBooks[i]['img_l'] });
+                
+                showFiveBooksDiv.selectAll('text')
+                  .data(fiveBooks)
+                  .enter()
+                  .append('text')
+                  .html(function(d, i) { 
+                    return '</br>'+ 'Book Name: ' + fiveBooks[i]['book_title'] + ', ' +
+                          'ISBN: ' + fiveBooks[i]['isbn'] + '</br>';  });           
+            }
+                        
         }
         else if(method=="book"){
             //rating recommendation and visualization
